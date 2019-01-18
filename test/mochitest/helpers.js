@@ -751,9 +751,9 @@ function addBreakpoint(dbg, source, line, column) {
 }
 
 function disableBreakpoint(dbg, source, line, column) {
-  source = findSource(dbg, source);
-  const sourceId = source.id;
-  dbg.actions.disableBreakpoint({ sourceId, line, column });
+  const location = { sourceId: source.id, sourceUrl: source.url, line, column };
+  const bp = dbg.selectors.getBreakpointForLocation(dbg.getState(), location);
+  dbg.actions.disableBreakpoint(bp);
   return waitForDispatch(dbg, "DISABLE_BREAKPOINT");
 }
 
@@ -891,7 +891,10 @@ async function assertScopes(dbg, items) {
  * @static
  */
 function removeBreakpoint(dbg, sourceId, line, column) {
-  dbg.actions.removeBreakpoint({ sourceId, line, column });
+  const source = dbg.selectors.getSource(dbg.getState(), sourceId);
+  const location = { sourceId, sourceUrl: source.url, line, column };
+  const bp = dbg.selectors.getBreakpointForLocation(dbg.getState(), location);
+  dbg.actions.removeBreakpoint(bp);
   return waitForDispatch(dbg, "REMOVE_BREAKPOINT");
 }
 
@@ -1099,8 +1102,8 @@ const selectors = {
   scopeNode: i => `.scopes-list .tree-node:nth-child(${i}) .object-label`,
   scopeValue: i =>
     `.scopes-list .tree-node:nth-child(${i}) .object-delimiter + *`,
-  frame: i => `.frames ul li:nth-child(${i})`,
-  frames: ".frames ul li",
+  frame: i => `.frames [role="list"] [role="listitem"]:nth-child(${i})`,
+  frames: '.frames [role="list"] [role="listitem"]',
   gutter: i => `.CodeMirror-code *:nth-child(${i}) .CodeMirror-linenumber`,
   // These work for bobth the breakpoint listing and gutter marker
   gutterContextMenu: {
